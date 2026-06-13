@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Drug Sales Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              ink: "#16201d",
+              muted: "#68716d",
+              paper: "#f4f1ea",
+              panel: "#fffdfa",
+              teal: "#0f8b7d",
+              rust: "#c4572a",
+              blue: "#345995",
+              plum: "#6d597a",
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="stylesheet" href="/assets/styles.css">
+  </head>
+  <body class="bg-paper text-ink antialiased">
+    <header class="border-b border-stone-300 bg-panel">
+      <div class="mx-auto flex max-w-[1500px] flex-col gap-6 px-5 py-8 lg:flex-row lg:items-center lg:justify-between lg:px-10">
+        <div>
+          <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-teal/20 bg-teal/10 px-3 py-1 text-xs font-bold uppercase text-teal">
+            <i data-lucide="sparkles" class="h-4 w-4"></i>
+            Pharmaceutical analytics
+          </div>
+          <h1 class="max-w-4xl text-4xl font-black tracking-normal md:text-6xl">Drug Sales Intelligence</h1>
+        </div>
+        <div class="grid gap-3 sm:grid-cols-3 lg:min-w-[540px]">
+          <div class="hero-stat">
+            <div class="hero-icon bg-teal/10 text-teal">
+              <i data-lucide="network" class="h-5 w-5"></i>
+            </div>
+            <span>Model</span>
+            <strong>ERD + Star</strong>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-icon bg-blue/10 text-blue">
+              <i data-lucide="chart-no-axes-combined" class="h-5 w-5"></i>
+            </div>
+            <span>Agregaty</span>
+            <strong>Sprzedaz lekow</strong>
+          </div>
+          <div class="hero-stat hero-stat-dark">
+            <div class="hero-icon bg-white/10 text-white">
+              <i data-lucide="database-zap" class="h-5 w-5"></i>
+            </div>
+            <span>Baza</span>
+            <strong>SQL Server</strong>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-[1500px] px-5 py-6 lg:px-10">
+      <section class="sticky top-0 z-20 mb-4 rounded-lg border border-stone-300 bg-panel/95 p-3 shadow-xl backdrop-blur" aria-label="Filtry">
+        <div class="grid gap-3 md:grid-cols-3 xl:grid-cols-7">
+          <label class="control">
+            <span>Rok</span>
+            <select id="year"></select>
+          </label>
+          <label class="control">
+            <span>Miasto</span>
+            <select id="city"></select>
+          </label>
+          <label class="control">
+            <span>Producent</span>
+            <select id="manufacturer"></select>
+          </label>
+          <label class="control">
+            <span>Lek</span>
+            <select id="drug"></select>
+          </label>
+          <label class="control">
+            <span>Typ</span>
+            <select id="type"></select>
+          </label>
+          <label class="control">
+            <span>Refundacja</span>
+            <select id="refunded">
+              <option value="">Wszystkie</option>
+              <option value="1">Refundowane</option>
+              <option value="0">Bez refundacji</option>
+            </select>
+          </label>
+          <button id="resetFilters" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-ink px-4 font-bold text-white hover:bg-stone-800" type="button">
+            <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
+            Reset
+          </button>
+        </div>
+      </section>
+
+      <section class="mb-4 grid gap-3 md:grid-cols-4">
+        <article class="kpi border-teal">
+          <span>Sprzedaz</span>
+          <strong id="kpiSales">-</strong>
+        </article>
+        <article class="kpi border-blue">
+          <span>Transakcje</span>
+          <strong id="kpiTransactions">-</strong>
+        </article>
+        <article class="kpi border-rust">
+          <span>Srednia cena</span>
+          <strong id="kpiAverage">-</strong>
+        </article>
+        <article class="kpi border-plum">
+          <span>Refundacje</span>
+          <strong id="kpiRefunds">-</strong>
+        </article>
+      </section>
+
+      <section class="mb-4 grid gap-px overflow-hidden rounded-lg border border-stone-300 bg-stone-300 md:grid-cols-4">
+        <div class="info-tile md:col-span-1">
+          <span>Zakres danych</span>
+          <strong id="dateRangeHero">-</strong>
+        </div>
+        <div class="info-tile">
+          <span>Leki</span>
+          <strong id="kpiDrugs">-</strong>
+        </div>
+        <div class="info-tile">
+          <span>Producenci</span>
+          <strong id="kpiManufacturers">-</strong>
+        </div>
+        <div class="info-tile">
+          <span>Miasta</span>
+          <strong id="kpiCities">-</strong>
+        </div>
+      </section>
+
+      <section class="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(360px,1fr)]">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Agregat SQL</p>
+              <h2>Sprzedaz miesieczna</h2>
+            </div>
+            <span id="dateRange" class="text-sm text-muted"></span>
+          </div>
+          <div id="lineChart" class="min-h-[320px]"></div>
+        </article>
+
+        <article class="panel bg-gradient-to-b from-blue/10 to-white">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Ranking</p>
+              <h2>Top leki</h2>
+            </div>
+            <i data-lucide="pill" class="h-5 w-5 text-blue"></i>
+          </div>
+          <div id="topDrugs" class="bar-list"></div>
+        </article>
+      </section>
+
+      <section class="mt-4 grid gap-4 xl:grid-cols-3">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Refundacje</p>
+              <h2>Udzial transakcji</h2>
+            </div>
+            <i data-lucide="circle-dollar-sign" class="h-5 w-5 text-teal"></i>
+          </div>
+          <div id="refundDonut"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Warunki</p>
+              <h2>Kategorie leczenia</h2>
+            </div>
+            <i data-lucide="heart-pulse" class="h-5 w-5 text-rust"></i>
+          </div>
+          <div id="conditions" class="bar-list"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Typ leku</p>
+              <h2>OTC vs prescription</h2>
+            </div>
+            <i data-lucide="layers-3" class="h-5 w-5 text-plum"></i>
+          </div>
+          <div id="drugTypes" class="grid gap-3"></div>
+        </article>
+      </section>
+
+      <section class="mt-4 grid gap-4 xl:grid-cols-3">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Producenci</p>
+              <h2>Sprzedaz wedlug firm</h2>
+            </div>
+          </div>
+          <div id="manufacturers" class="bar-list"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Geografia</p>
+              <h2>Miasta</h2>
+            </div>
+          </div>
+          <div id="cities" class="bar-list"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Open data</p>
+              <h2>Zrodla FDA/openFDA</h2>
+            </div>
+          </div>
+          <div id="sourceSummary" class="grid gap-3"></div>
+        </article>
+      </section>
+
+      <section class="panel mt-4">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">ERD</p>
+            <h2>Entity Relationship Diagram</h2>
+          </div>
+          <span class="text-sm text-muted">PK/FK + kardynalnosci</span>
+        </div>
+        <div class="erd-diagram">
+          <div class="erd-table erd-fact-table">
+            <div class="erd-title">
+              <i data-lucide="database" class="h-4 w-4 text-teal"></i>
+              <strong>factDrug</strong>
+            </div>
+            <ul>
+              <li><b>PK</b> id</li>
+              <li><b>FK</b> dimCity_id</li>
+              <li><b>FK</b> dimConTh_id</li>
+              <li><b>FK</b> dimDrug_id</li>
+              <li><b>FK</b> dimDrugType_id</li>
+              <li><b>FK</b> dimMan_id</li>
+              <li><b>FK</b> dimTime_id</li>
+              <li><b>M</b> cntDrug, sumDrug, avgDrug, minDrug, maxDrug</li>
+            </ul>
+          </div>
+
+          <div class="erd-dimensions">
+            <div class="erd-table">
+              <div class="erd-title"><strong>dimCity</strong></div>
+              <ul><li><b>PK</b> id</li><li>dimName</li></ul>
+            </div>
+            <div class="erd-table">
+              <div class="erd-title"><strong>dimConTh</strong></div>
+              <ul><li><b>PK</b> id</li><li>dimName</li></ul>
+            </div>
+            <div class="erd-table">
+              <div class="erd-title"><strong>dimDrug</strong></div>
+              <ul><li><b>PK</b> id</li><li>dimName</li></ul>
+            </div>
+            <div class="erd-table">
+              <div class="erd-title"><strong>dimDrugType</strong></div>
+              <ul><li><b>PK</b> id</li><li>dimName</li></ul>
+            </div>
+            <div class="erd-table">
+              <div class="erd-title"><strong>dimMan</strong></div>
+              <ul><li><b>PK</b> id</li><li>dimName</li></ul>
+            </div>
+            <div class="erd-table">
+              <div class="erd-title"><strong>dimTime</strong></div>
+              <ul><li><b>PK</b> id</li><li>timeDay, timeMonth, timeYear</li></ul>
+            </div>
+          </div>
+
+          <div class="erd-relations">
+            <div class="erd-relation"><span>dimCity</span><b>1</b><i></i><b>N</b><span>factDrug</span></div>
+            <div class="erd-relation"><span>dimConTh</span><b>1</b><i></i><b>N</b><span>factDrug</span></div>
+            <div class="erd-relation"><span>dimDrug</span><b>1</b><i></i><b>N</b><span>factDrug</span></div>
+            <div class="erd-relation"><span>dimDrugType</span><b>1</b><i></i><b>N</b><span>factDrug</span></div>
+            <div class="erd-relation"><span>dimMan</span><b>1</b><i></i><b>N</b><span>factDrug</span></div>
+            <div class="erd-relation"><span>dimTime</span><b>1</b><i></i><b>N</b><span>factDrug</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Model bazy</p>
+              <h2>Schemat gwiazdy</h2>
+            </div>
+            <span class="text-sm text-muted">factDrug + 6 wymiarow</span>
+          </div>
+          <div class="star-schema">
+            <div class="schema-node dim node-time"><strong>dimTime</strong><span>timeDay, timeMonth, timeYear</span></div>
+            <div class="schema-node dim node-city"><strong>dimCity</strong><span>miasto sprzedazy</span></div>
+            <div class="schema-node dim node-condition"><strong>dimConTh</strong><span>condition treated</span></div>
+            <div class="schema-node fact"><strong>factDrug</strong><span>cntDrug, sumDrug, avgDrug, minDrug, maxDrug</span></div>
+            <div class="schema-node dim node-drug"><strong>dimDrug</strong><span>nazwa leku</span></div>
+            <div class="schema-node dim node-type"><strong>dimDrugType</strong><span>OTC / prescription</span></div>
+            <div class="schema-node dim node-man"><strong>dimMan</strong><span>producent</span></div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">ETL</p>
+              <h2>Pipeline danych</h2>
+            </div>
+            <i data-lucide="workflow" class="h-5 w-5 text-teal"></i>
+          </div>
+          <div id="etlSteps" class="grid gap-3"></div>
+          <div class="mt-5">
+            <p class="mb-2 text-sm font-bold uppercase text-muted">SQL-e i dokumenty projektu</p>
+            <div id="sqlFiles" class="grid gap-2"></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="mt-4 grid gap-4 xl:grid-cols-2">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">NDC</p>
+              <h2>Top labelers</h2>
+            </div>
+          </div>
+          <div id="labelers" class="bar-list"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Adverse events</p>
+              <h2>Top reactions</h2>
+            </div>
+          </div>
+          <div id="reactions" class="bar-list"></div>
+        </article>
+      </section>
+
+      <section class="panel mt-4">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Detal</p>
+            <h2>Ostatnie rekordy faktow</h2>
+          </div>
+          <i data-lucide="table-2" class="h-5 w-5 text-muted"></i>
+        </div>
+        <div class="overflow-auto">
+          <table class="min-w-[920px] w-full border-collapse text-sm">
+            <thead>
+              <tr class="text-left text-xs uppercase text-muted">
+                <th class="border-b border-stone-200 p-3">Data</th>
+                <th class="border-b border-stone-200 p-3">Miasto</th>
+                <th class="border-b border-stone-200 p-3">Lek</th>
+                <th class="border-b border-stone-200 p-3">Producent</th>
+                <th class="border-b border-stone-200 p-3">Typ</th>
+                <th class="border-b border-stone-200 p-3">Warunek</th>
+                <th class="border-b border-stone-200 p-3">Ilosc</th>
+                <th class="border-b border-stone-200 p-3">Sprzedaz</th>
+              </tr>
+            </thead>
+            <tbody id="recordsBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="/assets/app.js"></script>
+  </body>
+</html>

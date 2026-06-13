@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hurtownia lekow</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header>
+      <h1>Hurtownia danych lekow</h1>
+      <p>SQL Server + Java Spring + Node + HTML</p>
+    </header>
+
+    <main>
+      <section class="cards">
+        <article>
+          <span>Rekordy faktow</span>
+          <strong id="factRows">...</strong>
+        </article>
+        <article>
+          <span>Sprzedane sztuki</span>
+          <strong id="soldCount">...</strong>
+        </article>
+        <article>
+          <span>Wartosc sprzedazy</span>
+          <strong id="salesValue">...</strong>
+        </article>
+        <article>
+          <span>Liczba lekow</span>
+          <strong id="drugCount">...</strong>
+        </article>
+      </section>
+
+      <section class="grid">
+        <div class="panel">
+          <h2>Top leki</h2>
+          <div id="topDrugs"></div>
+        </div>
+        <div class="panel">
+          <h2>Top producenci</h2>
+          <div id="manufacturers"></div>
+        </div>
+        <div class="panel">
+          <h2>Miasta</h2>
+          <div id="cities"></div>
+        </div>
+        <div class="panel">
+          <h2>Dane open source</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Zrodlo</th>
+                <th>Rekordy</th>
+              </tr>
+            </thead>
+            <tbody id="sources"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
